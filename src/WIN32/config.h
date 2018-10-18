@@ -38,8 +38,9 @@
 
 
 /* VC のインラインキーワード */
+#ifndef __MINGW32__
 #define	INLINE		__inline
-
+#endif
 
 /* サウンドドライバ用に、PI(π)とM_PI(π)を定義 */
 #ifndef PI

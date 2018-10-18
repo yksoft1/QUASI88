@@ -17,7 +17,8 @@
 #	( GTK版は実験中です。GTK版でサウンドを鳴らすには、SDL が必要です )
 
 # X11_VERSION	= 1
-SDL_VERSION	= 1
+# SDL_VERSION	= 1
+WIN32_VERSION = 1
 # GTK_VERSION	= 1
 
 
@@ -318,7 +319,7 @@ CFLAGS = -O2
 #-------------------------------------------------- どんなコンパイラでもOK
 # USEINLINE	= '-DINLINE=static'
 #-------------------------------------------------- GCC の場合
-USEINLINE	= '-DINLINE=static __inline__'
+ USEINLINE	= '-DINLINE=static __inline__'
 #-------------------------------------------------- Intel C++ コンパイラの場合
 # USEINLINE	= '-DINLINE=static inline'
 #--------------------------------------------------
@@ -351,6 +352,8 @@ CXX	 = g++
 CXXFLAGS = $(CFLAGS)
 CXXLIBS	 = -lstdc++ 
 
+# Win32用リソースコンパイラの設定
+WINDRES = windres
 
 # リンカの設定
 #	C++ コンパイラを使う場合、環境によっては $(CXX) とする必要が
@@ -523,6 +526,13 @@ LIBS   +=                       `$(SDL_CONFIG) --libs`
 CFLAGS += -DQUASI88_SDL
 
 else
+ifdef	WIN32_VERSION
+
+CFLAGS += -Isrc/FWIN -Isrc/WIN32  -I$(SRCDIR)/$(SRC_DIR)  -I$(SRCDIR)/$(SOUND_DIR) -I$(SRCDIR)/$(SD_Q88_DIR)
+CFLAGS += -DWIN32 -DNDEBUG -D_WINDOWS -D_MBCS
+LIBS += -lgdi32 -lwinmm -lcomdlg32
+
+else
 ifdef	GTK_VERSION
 
 # GTKバージョンでの設定
@@ -543,7 +553,7 @@ CFLAGS += -DQUASI88_MINI
 endif
 endif
 endif
-
+endif
 
 
 # モニターモード有効時の設定
@@ -787,6 +797,15 @@ SOUND_OBJS	= $(SOUND_OBJS_BASE)		\
 SOUND_CFLAGS	+= -I$(SRCDIR)/$(SD_SDL_DIR) -DSYSDEP_DSP_SDL
 
 else
+ifdef	WIN32_VERSION
+
+#
+# WIN32 バージョンでのサウンド設定
+#
+
+SOUND_OBJS	= $(SOUND_OBJS_BASE) 			
+
+else
 ifdef	GTK_VERSION
 
 #
@@ -868,6 +887,9 @@ else
 PROGRAM = quasi88.sdl
 endif
 else
+ifdef	WIN32_VERSION
+PROGRAM = quasi88.exe
+else
 ifdef	GTK_VERSION
 PROGRAM = quasi88.gtk
 else
@@ -875,7 +897,7 @@ PROGRAM = quasi88.mini
 endif
 endif
 endif
-
+endif
 
 
 ifdef	X11_VERSION
@@ -889,6 +911,9 @@ else
 OBJECT += FUNIX/file-op.o
 endif
 else
+ifdef	WIN32_VERSION
+OBJECT = WIN32/graph.o WIN32/wait.o WIN32/event.o WIN32/main.o WIN32/menubar.o  WIN32/audio.o  FWIN/file-op.o WIN32/quasi88.o
+else
 ifdef	GTK_VERSION
 OBJECT = GTK/graph.o GTK/wait.o GTK/event.o GTK/main.o GTK/menubar.o FUNIX/file-op.o
 else
@@ -896,7 +921,8 @@ OBJECT = MINI/graph.o MINI/wait.o MINI/event.o MINI/main.o FDUMMY/file-op.o
 endif
 endif
 endif
-
+endif
+endif
 
 
 OBJECT += quasi88.o emu.o memory.o status.o getconf.o \
@@ -908,8 +934,12 @@ OBJECT += quasi88.o emu.o memory.o status.o getconf.o \
 	  screen-8bpp.o screen-16bpp.o screen-32bpp.o screen-snapshot.o \
 	  $(SOUND_OBJS)
 
+ifdef WIN32_VERSION
+CFLAGS += $(USEINLINE) -DCLIB_DECL=
+else
 CFLAGS += -DROM_DIR='"$(ROMDIR)"' -DDISK_DIR='"$(DISKDIR)"' \
 	  -DTAPE_DIR='"$(TAPEDIR)"' $(USEINLINE) -DCLIB_DECL= 
+endif
 
 CXXFLAGS += $(CFLAGS)
 
@@ -932,12 +962,17 @@ else
 OBJDIRS		+= $(OBJDIR)/FUNIX
 endif
 else
+ifdef	WIN32_VERSION
+OBJDIR		= obj.win32
+OBJDIRS		+=  $(OBJDIR) $(OBJDIR)/WIN32 $(OBJDIR)/FWIN
+else
 ifdef	GTK_VERSION
 OBJDIR		= obj.gtk
 OBJDIRS		+= $(OBJDIR) $(OBJDIR)/GTK $(OBJDIR)/FUNIX
 else
 OBJDIR		= obj.mini
 OBJDIRS		+= $(OBJDIR) $(OBJDIR)/MINI $(OBJDIR)/FDUMMY
+endif
 endif
 endif
 endif
@@ -988,6 +1023,9 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 
 $(OBJDIR)/%.s: $(SRCDIR)/%.c
 		$(CC) $(CFLAGS) $(SOUND_CFLAGS) -o $@ -S $<
+		
+$(OBJDIR)/%.o: $(SRCDIR)/%.rc
+		$(WINDRES)  -o $@  $<
 
 
 clean:
