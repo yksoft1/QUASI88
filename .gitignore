@@ -50,3 +50,16 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# ROM files
+*.rom
+*.ROM
+
+# Disk images
+*.d88
+*.D88
+
+# Config files
+quasi88.rc
+quasi88.ini
+quasi88.bak
